@@ -1,0 +1,12 @@
+**.vscode/
+*.code-workspace
+.vscode/
+**/__pycache__/
+**.mypy_cache/
+**/instance/
+**/paw/
+*.paw
+conda_env.yml
+**/.DS_Store
+**/node_modules/
+output.txt
