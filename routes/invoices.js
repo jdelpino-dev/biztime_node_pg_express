@@ -5,7 +5,7 @@ import {
   deleteInvoice,
   getAllInvoices,
   getInvoice,
-  updateInvoice,
+  updateInvoiceAmt,
 } from "../db.js"; // Ensure the path to db.js is correct
 
 const router = express.Router();
@@ -65,7 +65,7 @@ router.post("/", async (req, res, next) => {
 router.put("/:id", async (req, res, next) => {
   try {
     const { amt } = req.body;
-    const invoice = await updateInvoice(req.params.id, amt);
+    const invoice = await updateInvoiceAmt(req.params.id, amt);
     if (!invoice) {
       return res.status(404).json({ error: "Invoice not found" });
     }
