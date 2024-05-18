@@ -170,19 +170,34 @@ async function createInvoice(comp_code, amt, paid = false, paid_date) {
 
 /**
  * Updates an existing invoice in the database.
+ * Only updates the fields provided in the parameters.
  * @param {number} id - The ID of the invoice to update.
- * @param {number} amt - The new amount of the invoice.
- * @param {boolean} paid - The new paid status of the invoice.
- * @param {Date} paid_date - The new paid date of the invoice.
+ * @param {Object} fields - An object containing the fields to update.
  * @returns {Promise<Object>} A promise that resolves to the updated invoice object.
  */
-async function updateInvoice(id, amt, paid, paid_date) {
+async function updateInvoice(id, fields) {
   try {
-    const res = await client.query(
-      "UPDATE invoices SET amt = $1, paid = $2, paid_date = $3" +
-        "WHERE id = $4 RETURNING *",
-      [amt, paid, paid_date, id]
-    );
+    const setClauses = [];
+    const values = [];
+    let paramIndex = 1;
+
+    // Build the SET clauses dynamically based on the provided fields
+    for (const field in fields) {
+      setClauses.push(`${field} = $${paramIndex}`);
+      values.push(fields[field]);
+      paramIndex++;
+    }
+
+    values.push(id); // Add the id to the end of the values array
+
+    const query = `
+      UPDATE invoices
+      SET ${setClauses.join(", ")}
+      WHERE id = $${paramIndex}
+      RETURNING *
+    `;
+
+    const res = await client.query(query, values);
     return res.rows[0];
   } catch (err) {
     console.error("Error updating invoice:", err);
