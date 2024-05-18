@@ -1,7 +1,8 @@
 /**
  * Database setup for BizTime.
- * This module provides various functions to interact with the 'companies' and 'invoices' tables.
- * It includes functions for CRUD operations and other database interactions.
+ * This module provides various functions to interact with the 'companies'
+ * and 'invoices' tables. It includes functions for CRUD operations
+ * and other database interactions.
  *
  * @module db
  */
@@ -153,7 +154,7 @@ async function getInvoice(id) {
  * @param {Date} paid_date - The paid date of the invoice.
  * @returns {Promise<Object>} A promise that resolves to the newly created invoice object.
  */
-async function createInvoice(comp_code, amt, paid, paid_date) {
+async function createInvoice(comp_code, amt, paid = false, paid_date) {
   try {
     const res = await client.query(
       "INSERT INTO invoices (comp_code, amt, paid, paid_date)" +
@@ -185,6 +186,25 @@ async function updateInvoice(id, amt, paid, paid_date) {
     return res.rows[0];
   } catch (err) {
     console.error("Error updating invoice:", err);
+    throw err;
+  }
+}
+
+/**
+ * Updates the amount field of existing invoice in the database.
+ * @param {number} id - The ID of the invoice to update.
+ * @param {number} amt - The new amount of the invoice.
+ * @returns {Promise<Object>} A promise that resolves to the updated invoice object.
+ */
+async function updateInvoiceAmt(id, amt) {
+  try {
+    const res = await client.query(
+      "UPDATE invoices SET amt = $1 WHERE id = $2 RETURNING *",
+      [amt, id]
+    );
+    return res.rows[0];
+  } catch (err) {
+    console.error("Error updating invoice amount:", err);
     throw err;
   }
 }
@@ -381,5 +401,6 @@ export {
   getUnpaidInvoices,
   updateCompany,
   updateInvoice,
+  updateInvoiceAmt,
   updateInvoicePaidStatus,
 };
