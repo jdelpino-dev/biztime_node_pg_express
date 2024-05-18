@@ -3,6 +3,7 @@ import express from "express";
 import morgan from "morgan";
 import ExpressError from "./expressError.js";
 import companiesRoutes from "./routes/companies.js";
+import invoicesRoutes from "./routes/invoices.js";
 
 const app = express();
 
@@ -13,6 +14,9 @@ app.use(morgan("dev"));
 
 // Company routes
 app.use("/companies", companiesRoutes);
+
+// Invoice routes
+app.use("/invoices", invoicesRoutes);
 
 // 404 handler
 app.use(function (req, res, next) {

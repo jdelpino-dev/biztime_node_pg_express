@@ -4,6 +4,7 @@ import {
   createCompany,
   deleteCompany,
   getAllCompanies,
+  getAllCompanyInvoices,
   getCompany,
   updateCompany,
 } from "../db.js"; // Ensure the path to db.js is correct
@@ -25,7 +26,8 @@ router.get("/", async (req, res, next) => {
 
 /**
  * GET /companies/:code
- * Returns obj of company: `{company: {code, name, description}}`
+ * Returns obj of company:
+ * `{company: {code, name, description,invoices: [id, ...]}}`
  */
 router.get("/:code", async (req, res, next) => {
   try {
@@ -33,6 +35,8 @@ router.get("/:code", async (req, res, next) => {
     if (!company) {
       return res.status(404).json({ error: "Company not found" });
     }
+    const invoices = await getAllCompanyInvoices(req.params.code);
+    company.invoices = invoices.map((inv) => inv.id);
     return res.json({ company });
   } catch (err) {
     return next(err);
