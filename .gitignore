@@ -10,3 +10,4 @@ conda_env.yml
 **/.DS_Store
 **/node_modules/
 output.txt
+**/coverage/
