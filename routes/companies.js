@@ -7,7 +7,8 @@ import {
   getAllCompanyInvoices,
   getCompany,
   updateCompany,
-} from "../db.js"; // Ensure the path to db.js is correct
+} from "../db.js";
+import ExpressError from "../expressError.js";
 
 const router = express.Router();
 
@@ -33,7 +34,8 @@ router.get("/:code", async (req, res, next) => {
   try {
     const company = await getCompany(req.params.code);
     if (!company) {
-      return res.status(404).json({ error: "Company not found" });
+      const error = new ExpressError("Company not found", 404);
+      throw error;
     }
     const invoices = await getAllCompanyInvoices(req.params.code);
     company.invoices = invoices.map((inv) => inv.id);
@@ -69,7 +71,8 @@ router.put("/:code", async (req, res, next) => {
     const { name, description } = req.body;
     const company = await updateCompany(req.params.code, name, description);
     if (!company) {
-      return res.status(404).json({ error: "Company not found" });
+      const error = new ExpressError("Company not found", 404);
+      throw error;
     }
     return res.json({ company });
   } catch (err) {
@@ -86,7 +89,8 @@ router.delete("/:code", async (req, res, next) => {
   try {
     const company = await deleteCompany(req.params.code);
     if (!company) {
-      return res.status(404).json({ error: "Company not found" });
+      const error = new ExpressError("Company not found", 404);
+      throw error;
     }
     return res.json({ status: "deleted" });
   } catch (err) {

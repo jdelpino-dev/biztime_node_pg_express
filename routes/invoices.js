@@ -5,8 +5,9 @@ import {
   deleteInvoice,
   getAllInvoices,
   getInvoice,
-  updateInvoiceAmt,
-} from "../db.js"; // Ensure the path to db.js is correct
+  updateInvoice,
+} from "../db.js";
+import ExpressError from "../expressError.js";
 
 const router = express.Router();
 
@@ -33,7 +34,8 @@ router.get("/:id", async (req, res, next) => {
   try {
     const invoice = await getInvoice(req.params.id);
     if (!invoice) {
-      return res.status(404).json({ error: "Invoice not found" });
+      const error = new ExpressError("Invoice not found", 404);
+      throw error;
     }
     return res.json({ invoice });
   } catch (err) {
@@ -59,16 +61,27 @@ router.post("/", async (req, res, next) => {
 /**
  * PUT /invoices/:id
  * Updates an invoice. If invoice cannot be found, returns a 404.
- * Needs to be passed in a JSON body of `{amt}`
+ * Allows partial updates by only updating fields provided in the request body.
  * Returns `{invoice: {id, comp_code, amt, paid, add_date, paid_date}}`
  */
 router.put("/:id", async (req, res, next) => {
   try {
-    const { amt } = req.body;
-    const invoice = await updateInvoiceAmt(req.params.id, amt);
-    if (!invoice) {
-      return res.status(404).json({ error: "Invoice not found" });
+    const invoiceId = req.params.id;
+    const fields = req.body;
+
+    // Check if the fields object is empty
+    if (Object.keys(fields).length === 0) {
+      const error = new ExpressError("No fields to update provided", 400);
+      throw error;
     }
+
+    const invoice = await updateInvoice(invoiceId, fields);
+
+    if (!invoice) {
+      const error = new ExpressError("Invoice not found", 404);
+      throw error;
+    }
+
     return res.json({ invoice });
   } catch (err) {
     return next(err);
@@ -84,7 +97,8 @@ router.delete("/:id", async (req, res, next) => {
   try {
     const invoice = await deleteInvoice(req.params.id);
     if (!invoice) {
-      return res.status(404).json({ error: "Invoice not found" });
+      const error = new ExpressError("Invoice not found", 404);
+      throw error;
     }
     return res.json({ status: "deleted" });
   } catch (err) {
