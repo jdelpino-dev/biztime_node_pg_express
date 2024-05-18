@@ -264,7 +264,7 @@ async function getAllCompanyInvoices(code) {
  * Fetches the total number of invoices in the database.
  * @returns {Promise<number>} A promise that resolves to the total number of invoices.
  */
-async function getInvoiceCount(client) {
+async function getInvoiceCount() {
   let res = await client.query("SELECT COUNT(*) FROM invoices");
   let count = parseInt(res.rows[0].count, 10);
   console.log("Total Invoices:", count);
@@ -275,7 +275,7 @@ async function getInvoiceCount(client) {
  * Fetches unpaid invoices from the database.
  * @returns {Promise<Array>} A promise that resolves to an array of unpaid invoices.
  */
-async function getUnpaidInvoices(client) {
+async function getUnpaidInvoices() {
   let res = await client.query("SELECT * FROM invoices WHERE paid = false");
   let unpaidInvoices = res.rows;
   console.log("Unpaid Invoices:", unpaidInvoices);
@@ -286,7 +286,7 @@ async function getUnpaidInvoices(client) {
  * Fetches paid invoices from the database.
  * @returns {Promise<Array>} A promise that resolves to an array of paid invoices.
  */
-async function getPaidInvoices(client) {
+async function getPaidInvoices() {
   let res = await client.query("SELECT * FROM invoices WHERE paid = true");
   let paidInvoices = res.rows;
   console.log("Paid Invoices:", paidInvoices);
@@ -297,7 +297,7 @@ async function getPaidInvoices(client) {
  * Fetches all companies along with their associated invoices.
  * @returns {Promise<Array>} A promise that resolves to an array of companies with their invoices.
  */
-async function getAllCompaniesWithInvoices(client) {
+async function getAllCompaniesWithInvoices() {
   let res = await client.query(`
     SELECT c.code, c.name, c.description, i.id, i.amt, i.paid, i.add_date, i.paid_date
     FROM companies AS c
@@ -313,7 +313,7 @@ async function getAllCompaniesWithInvoices(client) {
  * Fetches the latest invoice added to the database.
  * @returns {Promise<Object>} A promise that resolves to the latest invoice object.
  */
-async function getLatestInvoice(client) {
+async function getLatestInvoice() {
   let res = await client.query(
     "SELECT * FROM invoices ORDER BY add_date DESC LIMIT 1"
   );
@@ -328,7 +328,7 @@ async function getLatestInvoice(client) {
  * @param {Date} endDate - The end date of the range.
  * @returns {Promise<Array>} A promise that resolves to an array of invoices within the date range.
  */
-async function getInvoicesByDateRange(client, startDate, endDate) {
+async function getInvoicesByDateRange(startDate, endDate) {
   let res = await client.query(
     "SELECT * FROM invoices WHERE add_date BETWEEN $1 AND $2",
     [startDate, endDate]
@@ -340,11 +340,10 @@ async function getInvoicesByDateRange(client, startDate, endDate) {
 
 /**
  * Fetches a company along with all its invoices.
- * @param {Client} client - The PostgreSQL client.
  * @param {string} code - The company code.
  * @returns {Promise<Object>} A promise that resolves to a company object with its invoices.
  */
-async function getCompanyWithInvoices(client, code) {
+async function getCompanyWithInvoices(code) {
   let res = await client.query(
     `SELECT c.code, c.name, c.description, i.id, i.amt, i.paid, i.add_date, i.paid_date
      FROM companies AS c
@@ -360,10 +359,9 @@ async function getCompanyWithInvoices(client, code) {
 
 /**
  * Fetches invoices that are due (unpaid and past the paid date).
- * @param {Client} client - The PostgreSQL client.
  * @returns {Promise<Array>} A promise that resolves to an array of due invoices.
  */
-async function getDueInvoices(client) {
+async function getDueInvoices() {
   let res = await client.query(
     "SELECT * FROM invoices WHERE paid = false AND paid_date < CURRENT_DATE"
   );
@@ -374,13 +372,12 @@ async function getDueInvoices(client) {
 
 /**
  * Updates the paid status and paid date of an invoice.
- * @param {Client} client - The PostgreSQL client.
  * @param {number} id - The ID of the invoice.
  * @param {boolean} paid - The new paid status.
  * @param {Date} [paidDate] - The new paid date (optional).
  * @returns {Promise<Object>} A promise that resolves to the updated invoice object.
  */
-async function updateInvoicePaidStatus(client, id, paid, paidDate = null) {
+async function updateInvoicePaidStatus(id, paid, paidDate = null) {
   let query = `
     UPDATE invoices
     SET paid = $1, paid_date = $2
