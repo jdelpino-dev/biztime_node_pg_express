@@ -21,10 +21,6 @@ jest.mock("pg", () => {
 
 jest.mock("../db.js");
 
-beforeAll(() => {
-  jest.clearAllMocks();
-});
-
 describe("Companies Routes", () => {
   beforeEach(() => {
     jest.clearAllMocks();
