@@ -7,31 +7,59 @@
  * @module db
  */
 
-import pg from "pg";
-const { Client } = pg;
+import { Pool } from "pg";
 
 /**
  * Initializes the PostgreSQL client and connects to the database.
  * Listens for errors on the client.
  */
 
+// Set the database URL/connection-string based on the environment
+let databaseUrl;
 if (process.env.NODE_ENV === "test") {
-  process.env.DATABASE_URL = "postgresql:///biztime-test";
+  databaseUrl = "postgresql:///biztime-test";
 } else {
-  process.env.DATABASE_URL = "postgresql:///biztime";
+  databaseUrl = "postgresql:///biztime";
 }
 
-const connectionString = process.env.DATABASE_URL;
-
-const client = new Client({
-  connectionString: connectionString,
+// Create a new PostgreSQL client pool and connect to the database
+const pool = new Pool({
+  connectionString: databaseUrl,
 });
 
-client.connect();
-
-client.on("error", (err) => {
+// Listen for errors on the client
+pool.on("error", (err) => {
   console.error("Database connection error:", err.stack);
 });
+
+let client;
+
+/**
+ * Begins a new transaction/s.
+ * @returns {Promise<void>} A promise that resolves when the transaction begins.
+ */
+async function beginTransactionsDB() {
+  client = await pool.connect();
+  await client.query("BEGIN");
+}
+
+/**
+ * Rolls back the current transaction/s.
+ * @returns {Promise<void>} A promise that resolves when the transaction is rolled back.
+ */
+async function commitTransactionsDB() {
+  await client.query("COMMIT");
+  client.release();
+}
+
+/**
+ * Commits the current transactions.
+ * @returns {Promise<void>} A promise that resolves when the transaction is committed.
+ */
+async function rollbackTransactionsDB() {
+  await client.query("ROLLBACK");
+  client.release();
+}
 
 /**
  * Fetches all companies from the database.
@@ -39,7 +67,7 @@ client.on("error", (err) => {
  */
 async function getAllCompanies() {
   try {
-    const res = await client.query("SELECT * FROM companies");
+    const res = await pool.query("SELECT * FROM companies");
     return res.rows;
   } catch (err) {
     console.error("Error getting companies:", err);
@@ -54,7 +82,7 @@ async function getAllCompanies() {
  */
 async function getCompany(code) {
   try {
-    const res = await client.query("SELECT * FROM companies WHERE code = $1", [
+    const res = await pool.query("SELECT * FROM companies WHERE code = $1", [
       code,
     ]);
     return res.rows[0];
@@ -73,7 +101,7 @@ async function getCompany(code) {
  */
 async function createCompany(code, name, description) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "INSERT INTO companies (code, name, description)" +
         "VALUES ($1, $2, $3) RETURNING *",
       [code, name, description]
@@ -94,7 +122,7 @@ async function createCompany(code, name, description) {
  */
 async function updateCompany(code, name, description) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "UPDATE companies SET name = $1, description = $2" +
         "WHERE code = $3 RETURNING *",
       [name, description, code]
@@ -113,7 +141,7 @@ async function updateCompany(code, name, description) {
  */
 async function deleteCompany(code) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "DELETE FROM companies WHERE code = $1 RETURNING *",
       [code]
     );
@@ -130,7 +158,7 @@ async function deleteCompany(code) {
  */
 async function getAllInvoices() {
   try {
-    const res = await client.query("SELECT * FROM invoices");
+    const res = await pool.query("SELECT * FROM invoices");
     return res.rows;
   } catch (err) {
     console.error("Error getting invoices:", err);
@@ -145,9 +173,7 @@ async function getAllInvoices() {
  */
 async function getInvoice(id) {
   try {
-    const res = await client.query("SELECT * FROM invoices WHERE id = $1", [
-      id,
-    ]);
+    const res = await pool.query("SELECT * FROM invoices WHERE id = $1", [id]);
     return res.rows[0];
   } catch (err) {
     console.error("Error getting invoice:", err);
@@ -165,7 +191,7 @@ async function getInvoice(id) {
  */
 async function createInvoice(comp_code, amt, paid = false, paid_date) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "INSERT INTO invoices (comp_code, amt, paid, paid_date)" +
         " VALUES ($1, $2, $3, $4) RETURNING *",
       [comp_code, amt, paid, paid_date]
@@ -206,7 +232,7 @@ async function updateInvoice(id, fields) {
       RETURNING *
     `;
 
-    const res = await client.query(query, values);
+    const res = await pool.query(query, values);
     return res.rows[0];
   } catch (err) {
     console.error("Error updating invoice:", err);
@@ -222,7 +248,7 @@ async function updateInvoice(id, fields) {
  */
 async function updateInvoiceAmt(id, amt) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "UPDATE invoices SET amt = $1 WHERE id = $2 RETURNING *",
       [amt, id]
     );
@@ -240,7 +266,7 @@ async function updateInvoiceAmt(id, amt) {
  */
 async function deleteInvoice(id) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "DELETE FROM invoices WHERE id = $1 RETURNING *",
       [id]
     );
@@ -258,7 +284,7 @@ async function deleteInvoice(id) {
  */
 async function getAllCompanyInvoices(code) {
   try {
-    const res = await client.query(
+    const res = await pool.query(
       "SELECT * FROM invoices WHERE comp_code = $1",
       [code]
     );
@@ -274,7 +300,7 @@ async function getAllCompanyInvoices(code) {
  * @returns {Promise<number>} A promise that resolves to the total number of invoices.
  */
 async function getInvoiceCount() {
-  let res = await client.query("SELECT COUNT(*) FROM invoices");
+  let res = await pool.query("SELECT COUNT(*) FROM invoices");
   let count = parseInt(res.rows[0].count, 10);
   console.log("Total Invoices:", count);
   return count;
@@ -285,7 +311,7 @@ async function getInvoiceCount() {
  * @returns {Promise<Array>} A promise that resolves to an array of unpaid invoices.
  */
 async function getUnpaidInvoices() {
-  let res = await client.query("SELECT * FROM invoices WHERE paid = false");
+  let res = await pool.query("SELECT * FROM invoices WHERE paid = false");
   let unpaidInvoices = res.rows;
   console.log("Unpaid Invoices:", unpaidInvoices);
   return unpaidInvoices;
@@ -296,7 +322,7 @@ async function getUnpaidInvoices() {
  * @returns {Promise<Array>} A promise that resolves to an array of paid invoices.
  */
 async function getPaidInvoices() {
-  let res = await client.query("SELECT * FROM invoices WHERE paid = true");
+  let res = await pool.query("SELECT * FROM invoices WHERE paid = true");
   let paidInvoices = res.rows;
   console.log("Paid Invoices:", paidInvoices);
   return paidInvoices;
@@ -307,7 +333,7 @@ async function getPaidInvoices() {
  * @returns {Promise<Array>} A promise that resolves to an array of companies with their invoices.
  */
 async function getAllCompaniesWithInvoices() {
-  let res = await client.query(`
+  let res = await pool.query(`
     SELECT c.code, c.name, c.description, i.id, i.amt, i.paid, i.add_date, i.paid_date
     FROM companies AS c
     LEFT JOIN invoices AS i
@@ -323,7 +349,7 @@ async function getAllCompaniesWithInvoices() {
  * @returns {Promise<Object>} A promise that resolves to the latest invoice object.
  */
 async function getLatestInvoice() {
-  let res = await client.query(
+  let res = await pool.query(
     "SELECT * FROM invoices ORDER BY add_date DESC LIMIT 1"
   );
   let latestInvoice = res.rows[0];
@@ -338,7 +364,7 @@ async function getLatestInvoice() {
  * @returns {Promise<Array>} A promise that resolves to an array of invoices within the date range.
  */
 async function getInvoicesByDateRange(startDate, endDate) {
-  let res = await client.query(
+  let res = await pool.query(
     "SELECT * FROM invoices WHERE add_date BETWEEN $1 AND $2",
     [startDate, endDate]
   );
@@ -353,7 +379,7 @@ async function getInvoicesByDateRange(startDate, endDate) {
  * @returns {Promise<Object>} A promise that resolves to a company object with its invoices.
  */
 async function getCompanyWithInvoices(code) {
-  let res = await client.query(
+  let res = await pool.query(
     `SELECT c.code, c.name, c.description, i.id, i.amt, i.paid, i.add_date, i.paid_date
      FROM companies AS c
      LEFT JOIN invoices AS i
@@ -371,7 +397,7 @@ async function getCompanyWithInvoices(code) {
  * @returns {Promise<Array>} A promise that resolves to an array of due invoices.
  */
 async function getDueInvoices() {
-  let res = await client.query(
+  let res = await pool.query(
     "SELECT * FROM invoices WHERE paid = false AND paid_date < CURRENT_DATE"
   );
   let dueInvoices = res.rows;
@@ -392,17 +418,15 @@ async function updateInvoicePaidStatus(id, paid, paidDate = null) {
     SET paid = $1, paid_date = $2
     WHERE id = $3
     RETURNING *`;
-  let res = await client.query(query, [paid, paidDate, id]);
+  let res = await pool.query(query, [paid, paidDate, id]);
   let updatedInvoice = res.rows[0];
   console.log("Updated Invoice:", updatedInvoice);
   return updatedInvoice;
 }
 
-process.on("exit", () => {
-  client.end();
-});
-
 export {
+  beginTransactionsDB,
+  commitTransactionsDB,
   createCompany,
   createInvoice,
   deleteCompany,
@@ -420,6 +444,7 @@ export {
   getLatestInvoice,
   getPaidInvoices,
   getUnpaidInvoices,
+  rollbackTransactionsDB,
   updateCompany,
   updateInvoice,
   updateInvoiceAmt,
