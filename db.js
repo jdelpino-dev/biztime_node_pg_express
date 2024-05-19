@@ -14,8 +14,17 @@ const { Client } = pg;
  * Initializes the PostgreSQL client and connects to the database.
  * Listens for errors on the client.
  */
+
+if (process.env.NODE_ENV === "test") {
+  process.env.DATABASE_URL = "postgresql:///biztime-test";
+} else {
+  process.env.DATABASE_URL = "postgresql:///biztime";
+}
+
+const connectionString = process.env.DATABASE_URL;
+
 const client = new Client({
-  connectionString: "postgresql:///biztime",
+  connectionString: connectionString,
 });
 
 client.connect();
