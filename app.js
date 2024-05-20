@@ -2,6 +2,7 @@
 import express from "express";
 import morgan from "morgan";
 import ExpressError from "./expressError.js";
+import dbClient from "./middleware/dbClient.js";
 import companiesRoutes from "./routes/companies.js";
 import invoicesRoutes from "./routes/invoices.js";
 
@@ -10,7 +11,11 @@ const app = express();
 // Middleware to parse JSON
 app.use(express.json());
 
+// Route logging middleware
 app.use(morgan("dev"));
+
+// Database middleware
+app.use(dbClient);
 
 // Company routes
 app.use("/companies", companiesRoutes);
