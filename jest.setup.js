@@ -1,4 +1,4 @@
-// jest.setup.js
+jest.setup.js;
 
 beforeAll(() => {
   jest.spyOn(console, "error").mockImplementation(() => {});
