@@ -10,6 +10,7 @@ interactions.
 
 import {
   beginTransactions,
+  commitTransactions,
   createCompany,
   createInvoice,
   deleteCompany,
@@ -31,6 +32,7 @@ import {
   rollbackTransactions,
   updateCompany,
   updateInvoice,
+  updateInvoiceAmt,
   updateInvoicePaidStatus,
 } from "../db.js";
 
@@ -475,6 +477,124 @@ describe("Database Integrations Tests", () => {
       comp_code: "c18",
       amt: 1800,
       paid: true,
+    });
+  });
+
+  it("should update the amount of an invoice", async () => {
+    await createCompany("c19", "Company19", "Description19", client);
+    const newInvoice = await createInvoice(
+      "c19",
+      1900,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+    const updatedInvoice = await updateInvoiceAmt(newInvoice.id, 2000, client);
+    expect(updatedInvoice).toMatchObject({
+      id: newInvoice.id,
+      comp_code: "c19",
+      amt: 2000,
+    });
+  });
+
+  it("should update the fields of an invoice", async () => {
+    await createCompany("c20", "Company20", "Description20", client);
+    const newInvoice = await createInvoice(
+      "c20",
+      2000,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+    const updatedInvoice = await updateInvoice(
+      newInvoice.id,
+      { amt: 2500, paid: true },
+      client
+    );
+    expect(updatedInvoice).toMatchObject({
+      id: newInvoice.id,
+      comp_code: "c20",
+      amt: 2500,
+      paid: true,
+    });
+  });
+
+  it("should rollback a transaction on error", async () => {
+    await createCompany("c21", "Company21", "Description21", client);
+    const newInvoice = await createInvoice(
+      "c21",
+      2100,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+
+    try {
+      await client.query("INSERT INTO non_existing_table VALUES ($1)", [
+        "test",
+      ]);
+    } catch (err) {
+      // Intentionally causing an error to trigger rollback
+    }
+
+    await rollbackTransactions(client);
+
+    const fetchedInvoice = await getInvoice(newInvoice.id, client);
+    expect(fetchedInvoice).toBeUndefined();
+  });
+
+  it("should commit a transaction successfully", async () => {
+    await createCompany("c22", "Company22", "Description22", client);
+    const newInvoice = await createInvoice(
+      "c22",
+      2200,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+
+    await commitTransactions(client);
+
+    const fetchedInvoice = await getInvoice(newInvoice.id);
+    expect(fetchedInvoice).toMatchObject({
+      comp_code: "c22",
+      amt: 2200,
+    });
+
+    await deleteCompany("c22", client);
+    await commitTransactions(client);
+    const fetchedCompany = await getCompany("c22", client);
+    expect(fetchedCompany).toBeUndefined();
+  });
+
+  it("should get the latest invoice after multiple inserts", async () => {
+    await createCompany("c24", "Company24", "Description24", client);
+    const newInvoice1 = await createInvoice(
+      "c24",
+      2400,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+    const newInvoice2 = await createInvoice(
+      "c24",
+      2500,
+      undefined,
+      undefined,
+      undefined,
+      client
+    );
+
+    const latestInvoice = await getLatestInvoice(client);
+    expect(latestInvoice).toMatchObject({
+      id: newInvoice2.id,
+      comp_code: "c24",
+      amt: 2500,
     });
   });
 });
