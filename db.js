@@ -7,8 +7,10 @@
  * @module db
  */
 
-import { Pool } from "pg";
-import { getCalendarDate } from "./utils/dateTime";
+import pkg from "pg";
+import { getCalendarDate } from "./utils/dateTime.js";
+
+const { Pool } = pkg;
 
 /**
  * Initializes the PostgreSQL client and connects to the database.
