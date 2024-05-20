@@ -18,7 +18,7 @@ const router = express.Router();
  */
 router.get("/", async (req, res, next) => {
   try {
-    const companies = await getAllCompanies();
+    const companies = await getAllCompanies(req.dbClient);
     return res.json({ companies });
   } catch (err) {
     return next(err);
@@ -32,12 +32,15 @@ router.get("/", async (req, res, next) => {
  */
 router.get("/:code", async (req, res, next) => {
   try {
-    const company = await getCompany(req.params.code);
+    const company = await getCompany(req.params.code, req.dbClient);
     if (!company) {
       const error = new ExpressError("Company not found", 404);
       throw error;
     }
-    const invoices = await getAllCompanyInvoices(req.params.code);
+    const invoices = await getAllCompanyInvoices(
+      req.params.code,
+      req.dbClient
+    );
     company.invoices = invoices.map((inv) => inv.id);
     return res.json({ company });
   } catch (err) {
@@ -53,7 +56,7 @@ router.get("/:code", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const { code, name, description } = req.body;
-    const company = await createCompany(code, name, description);
+    const company = await createCompany(code, name, description, req.dbClient);
     return res.status(201).json({ company });
   } catch (err) {
     return next(err);
@@ -69,7 +72,12 @@ router.post("/", async (req, res, next) => {
 router.put("/:code", async (req, res, next) => {
   try {
     const { name, description } = req.body;
-    const company = await updateCompany(req.params.code, name, description);
+    const company = await updateCompany(
+      req.params.code,
+      name,
+      description,
+      req.dbClient
+    );
     if (!company) {
       const error = new ExpressError("Company not found", 404);
       throw error;
@@ -87,7 +95,7 @@ router.put("/:code", async (req, res, next) => {
  */
 router.delete("/:code", async (req, res, next) => {
   try {
-    const company = await deleteCompany(req.params.code);
+    const company = await deleteCompany(req.params.code, req.dbClient);
     if (!company) {
       const error = new ExpressError("Company not found", 404);
       throw error;
