@@ -370,7 +370,6 @@ async function getInvoiceCount(client = null) {
       res = await client.query(query);
     }
     let count = parseInt(res.rows[0].count, 10);
-    console.log("Total Invoices:", count);
     return count;
   } catch (err) {
     console.error("Error getting invoice count:", err);
@@ -392,7 +391,6 @@ async function getUnpaidInvoices(client = null) {
       res = await client.query(query);
     }
     let unpaidInvoices = res.rows;
-    console.log("Unpaid Invoices:", unpaidInvoices);
     return unpaidInvoices;
   } catch (err) {
     console.error("Error getting unpaid invoices:", err);
@@ -414,7 +412,6 @@ async function getPaidInvoices(client = null) {
       res = await client.query(query);
     }
     let paidInvoices = res.rows;
-    console.log("Paid Invoices:", paidInvoices);
     return paidInvoices;
   } catch (err) {
     console.error("Error getting paid invoices:", err);
@@ -440,7 +437,6 @@ async function getAllCompaniesWithInvoices(client = null) {
     res = await client.query(query);
   }
   let companiesWithInvoices = res.rows;
-  console.log("Companies with Invoices:", companiesWithInvoices);
   return companiesWithInvoices;
 }
 
@@ -461,7 +457,6 @@ async function getLatestInvoice(client = null) {
       res = await client.query(query);
     }
     let latestInvoice = res.rows[0];
-    console.log("Latest Invoice:", latestInvoice);
     return latestInvoice;
   } catch (err) {
     console.error("Error getting latest invoice:", err);
