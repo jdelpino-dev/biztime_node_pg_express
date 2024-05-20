@@ -12,9 +12,13 @@ import { Pool } from "pg";
 import {
   createCompany,
   createInvoice,
+  deleteCompany,
+  deleteInvoice,
+  getAllCompanies,
   getCompany,
   getInvoice,
   getLatestInvoice,
+  getPaidInvoices,
   updateInvoiceAmt,
 } from "../db.js";
 
@@ -120,5 +124,68 @@ describe("Mocked Database Tests", () => {
 
     const latestInvoice = await getLatestInvoice(client);
     expect(latestInvoice).toEqual(invoiceData);
+  });
+
+  it("should delete a company", async () => {
+    const deletedCompany = {
+      code: "c1",
+      name: "Company1",
+      description: "Description1",
+    };
+    client.query.mockResolvedValueOnce({ rows: [deletedCompany] });
+
+    const result = await deleteCompany("c1", client);
+    expect(result).toEqual(deletedCompany);
+  });
+
+  it("should delete an invoice", async () => {
+    const deletedInvoice = {
+      id: 1,
+      comp_code: "c1",
+      amt: 500,
+      paid: false,
+      add_date: "2024-05-20",
+      paid_date: null,
+    };
+    client.query.mockResolvedValueOnce({ rows: [deletedInvoice] });
+
+    const result = await deleteInvoice(1, client);
+    expect(result).toEqual(deletedInvoice);
+  });
+
+  it("should get all companies", async () => {
+    const companies = [
+      {
+        code: "c1",
+        name: "Company1",
+        description: "Description1",
+      },
+      {
+        code: "c2",
+        name: "Company2",
+        description: "Description2",
+      },
+    ];
+    client.query.mockResolvedValueOnce({ rows: companies });
+
+    const result = await getAllCompanies(client);
+    expect(result).toEqual(companies);
+  });
+
+  it("should get paid invoices", async () => {
+    const paidInvoices = [
+      {
+        id: 1,
+        comp_code: "c1",
+        amt: 500,
+        paid: true,
+        add_date: "2024-05-20",
+        paid_date: "2024-05-21",
+      },
+    ];
+    client.query.mockResolvedValueOnce({ rows: paidInvoices });
+
+    const result = await getPaidInvoices(client);
+    expect(result).toEqual(paidInvoices);
   });
 });
