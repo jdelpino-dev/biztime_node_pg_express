@@ -1,6 +1,6 @@
 /**
  * Mock tests for the Database Functions for BizTime.
- * @module db
+ * @module db.mocked.test
  */
 
 import { Pool } from "pg";
@@ -29,7 +29,6 @@ import {
   updateInvoicePaidStatus,
 } from "../db";
 
-// Mock the pg module and initialise a new instance of the mocked pool
 jest.mock("pg", () => {
   const mPool = {
     connect: jest.fn(),
@@ -44,20 +43,20 @@ jest.mock("pg", () => {
 const pool = new Pool(); // create a new instance of the mocked pool
 pool.connect.mockResolvedValue(pool); // mock the connect method
 
-describe("Database Functions Mock Tests", () => {
-  beforeAll(async () => {
-    jest.clearAllMocks();
-  });
+beforeAll(async () => {
+  jest.clearAllMocks();
+});
 
-  beforeEach(async () => {
-    await beginTransactionsDB();
-  });
+beforeEach(async () => {
+  await beginTransactionsDB();
+});
 
-  afterEach(async () => {
-    await rollbackTransactionsDB();
-    pool.release.mockClear();
-  });
+afterEach(async () => {
+  await rollbackTransactionsDB();
+  pool.release.mockClear();
+});
 
+describe("Database functions", () => {
   it("should get all companies", async () => {
     pool.query.mockResolvedValueOnce({
       rows: [{ code: "c1", name: "Company1" }],
