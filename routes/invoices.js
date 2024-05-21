@@ -17,7 +17,7 @@ const router = express.Router();
  */
 router.get("/", async (req, res, next) => {
   try {
-    const invoices = await getAllInvoices();
+    const invoices = await getAllInvoices(req.dbClient);
     return res.json({ invoices });
   } catch (err) {
     return next(err);
@@ -32,7 +32,7 @@ router.get("/", async (req, res, next) => {
  */
 router.get("/:id", async (req, res, next) => {
   try {
-    const invoice = await getInvoice(req.params.id);
+    const invoice = await getInvoice(req.params.id, req.dbClient);
     if (!invoice) {
       const error = new ExpressError("Invoice not found", 404);
       throw error;
@@ -51,7 +51,14 @@ router.get("/:id", async (req, res, next) => {
 router.post("/", async (req, res, next) => {
   try {
     const { comp_code, amt } = req.body;
-    const invoice = await createInvoice(comp_code, amt);
+    const invoice = await createInvoice(
+      comp_code,
+      amt,
+      undefined,
+      undefined,
+      undefined,
+      req.dbClient
+    );
     return res.status(201).json({ invoice });
   } catch (err) {
     return next(err);
@@ -75,7 +82,7 @@ router.put("/:id", async (req, res, next) => {
       throw error;
     }
 
-    const invoice = await updateInvoice(invoiceId, fields);
+    const invoice = await updateInvoice(invoiceId, fields, req.dbClient);
 
     if (!invoice) {
       const error = new ExpressError("Invoice not found", 404);
@@ -95,7 +102,7 @@ router.put("/:id", async (req, res, next) => {
  */
 router.delete("/:id", async (req, res, next) => {
   try {
-    const invoice = await deleteInvoice(req.params.id);
+    const invoice = await deleteInvoice(req.params.id, req.dbClient);
     if (!invoice) {
       const error = new ExpressError("Invoice not found", 404);
       throw error;
